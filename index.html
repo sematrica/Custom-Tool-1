@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tools</title>
+    <!-- Include SheetJS for XLSX generation -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    select, button {
+      margin: 5px 0;
+      padding: 6px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    .copy-btn, .download-btn {
+      margin-left: 10px;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+    .hidden {
+      display: none;
+    }
+    .time-container {
+      margin: 10px 0;
+    }
+    .time-item {
+      display: flex;
+      align-items: center;
+      margin: 5px 0;
+    }
+    .ascii-item {
+      display: flex;
+      align-items: center;
+      margin: 3px 0;
+    }
+    .ascii-code {
+      width: 40px;
+      display: inline-block;
+    }
+    .ascii-char {
+      width: 30px;
+      display: inline-block;
+      text-align: center;
+      border: 1px solid #ccc;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Web Utility Example</h2>
+<div>
+    <label for="typeSelect">Select Type:</label>
+    <select id="typeSelect">
+        <option value="">Select Type</option>
+        <option value="states">US States and Territories</option>
+        <option value="holidays">US Holidays</option>
+        <option value="timezones">US Time Zone</option>
+        <option value="ascii">Standard ASCII (7-bit)</option>
+    </select>
+    <button id="getBtn">Get</button>
+</div>
+
+<!-- Container to display results -->
+<div id="result"></div>
+
+<script>
+  // --- Data Definitions ---
+
+  // 1) US States & Territories: Name, Abbreviation, Capital
+  //   (Below is a sample including states + a few territories; adjust if you want all.)
+  const usStatesAndTerritories = [
+    { name: "Alabama", abbreviation: "AL", capital: "Montgomery" },
+    { name: "Alaska", abbreviation: "AK", capital: "Juneau" },
+    { name: "Arizona", abbreviation: "AZ", capital: "Phoenix" },
+    { name: "Arkansas", abbreviation: "AR", capital: "Little Rock" },
+    { name: "California", abbreviation: "CA", capital: "Sacramento" },
+    { name: "Colorado", abbreviation: "CO", capital: "Denver" },
+    { name: "Connecticut", abbreviation: "CT", capital: "Hartford" },
+    { name: "Delaware", abbreviation: "DE", capital: "Dover" },
+    { name: "Florida", abbreviation: "FL", capital: "Tallahassee" },
+    { name: "Georgia", abbreviation: "GA", capital: "Atlanta" },
+    { name: "Hawaii", abbreviation: "HI", capital: "Honolulu" },
+    { name: "Idaho", abbreviation: "ID", capital: "Boise" },
+    { name: "Illinois", abbreviation: "IL", capital: "Springfield" },
+    { name: "Indiana", abbreviation: "IN", capital: "Indianapolis" },
+    { name: "Iowa", abbreviation: "IA", capital: "Des Moines" },
+    { name: "Kansas", abbreviation: "KS", capital: "Topeka" },
+    { name: "Kentucky", abbreviation: "KY", capital: "Frankfort" },
+    { name: "Louisiana", abbreviation: "LA", capital: "Baton Rouge" },
+    { name: "Maine", abbreviation: "ME", capital: "Augusta" },
+    { name: "Maryland", abbreviation: "MD", capital: "Annapolis" },
+    { name: "Massachusetts", abbreviation: "MA", capital: "Boston" },
+    { name: "Michigan", abbreviation: "MI", capital: "Lansing" },
+    { name: "Minnesota", abbreviation: "MN", capital: "St. Paul" },
+    { name: "Mississippi", abbreviation: "MS", capital: "Jackson" },
+    { name: "Missouri", abbreviation: "MO", capital: "Jefferson City" },
+    { name: "Montana", abbreviation: "MT", capital: "Helena" },
+    { name: "Nebraska", abbreviation: "NE", capital: "Lincoln" },
+    { name: "Nevada", abbreviation: "NV", capital: "Carson City" },
+    { name: "New Hampshire", abbreviation: "NH", capital: "Concord" },
+    { name: "New Jersey", abbreviation: "NJ", capital: "Trenton" },
+    { name: "New Mexico", abbreviation: "NM", capital: "Santa Fe" },
+    { name: "New York", abbreviation: "NY", capital: "Albany" },
+    { name: "North Carolina", abbreviation: "NC", capital: "Raleigh" },
+    { name: "North Dakota", abbreviation: "ND", capital: "Bismarck" },
+    { name: "Ohio", abbreviation: "OH", capital: "Columbus" },
+    { name: "Oklahoma", abbreviation: "OK", capital: "Oklahoma City" },
+    { name: "Oregon", abbreviation: "OR", capital: "Salem" },
+    { name: "Pennsylvania", abbreviation: "PA", capital: "Harrisburg" },
+    { name: "Rhode Island", abbreviation: "RI", capital: "Providence" },
+    { name: "South Carolina", abbreviation: "SC", capital: "Columbia" },
+    { name: "South Dakota", abbreviation: "SD", capital: "Pierre" },
+    { name: "Tennessee", abbreviation: "TN", capital: "Nashville" },
+    { name: "Texas", abbreviation: "TX", capital: "Austin" },
+    { name: "Utah", abbreviation: "UT", capital: "Salt Lake City" },
+    { name: "Vermont", abbreviation: "VT", capital: "Montpelier" },
+    { name: "Virginia", abbreviation: "VA", capital: "Richmond" },
+    { name: "Washington", abbreviation: "WA", capital: "Olympia" },
+    { name: "West Virginia", abbreviation: "WV", capital: "Charleston" },
+    { name: "Wisconsin", abbreviation: "WI", capital: "Madison" },
+    { name: "Wyoming", abbreviation: "WY", capital: "Cheyenne" },
+    // Territories
+    { name: "District of Columbia", abbreviation: "DC", capital: "Washington" },
+    { name: "Puerto Rico", abbreviation: "PR", capital: "San Juan" },
+    { name: "Guam", abbreviation: "GU", capital: "Hagåtña" },
+    { name: "American Samoa", abbreviation: "AS", capital: "Pago Pago" },
+    { name: "U.S. Virgin Islands", abbreviation: "VI", capital: "Charlotte Amalie" },
+    { name: "Northern Mariana Islands", abbreviation: "MP", capital: "Saipan" }
+  ];
+
+  // 2) US Holidays (major)
+  const usHolidays = [
+    { name: "New Year's Day", date: "January 1" },
+    { name: "Martin Luther King Jr. Day", date: "Third Monday in January" },
+    { name: "Presidents Day", date: "Third Monday in February" },
+    { name: "Memorial Day", date: "Last Monday in May" },
+    { name: "Independence Day", date: "July 4" },
+    { name: "Labor Day", date: "First Monday in September" },
+    { name: "Columbus Day", date: "Second Monday in October" },
+    { name: "Veterans Day", date: "November 11" },
+    { name: "Thanksgiving", date: "Fourth Thursday in November" },
+    { name: "Christmas Day", date: "December 25" }
+  ];
+
+  // 3) US Time Zones (sample set)
+  const usTimeZones = [
+    { label: "Eastern Time", tz: "America/New_York" },
+    { label: "Central Time", tz: "America/Chicago" },
+    { label: "Mountain Time", tz: "America/Denver" },
+    { label: "Pacific Time", tz: "America/Los_Angeles" },
+    { label: "Alaska Time", tz: "America/Anchorage" },
+    { label: "Hawaii Time", tz: "Pacific/Honolulu" }
+  ];
+
+  // 4) Standard ASCII (7-bit) codes (0–127).
+  // For control characters, we’ll store known abbreviations; for printable ones, just the character.
+  const asciiTable = [];
+  const controlNames = {
+    0: "NUL", 1: "SOH", 2: "STX", 3: "ETX", 4: "EOT", 5: "ENQ", 6: "ACK", 7: "BEL",
+    8: "BS",  9: "TAB", 10: "LF", 11: "VT", 12: "FF", 13: "CR", 14: "SO", 15: "SI",
+    16: "DLE", 17: "DC1", 18: "DC2", 19: "DC3", 20: "DC4", 21: "NAK", 22: "SYN", 23: "ETB",
+    24: "CAN", 25: "EM", 26: "SUB", 27: "ESC", 28: "FS", 29: "GS", 30: "RS", 31: "US",
+    127: "DEL"
+  };
+  for (let i = 0; i < 128; i++) {
+    let char = controlNames[i] || (String.fromCharCode(i));
+    asciiTable.push({
+      code: i,
+      char: (i >= 32 && i <= 126) ? String.fromCharCode(i) : char
+    });
+  }
+
+  // --- Utility Functions ---
+
+  // Format date/time as DD/MM/YYYY HH-MM-SS
+  function formatDateTimeForCopy(date) {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+    const ss = String(date.getSeconds()).padStart(2, "0");
+    return `${dd}/${mm}/${yyyy} ${hh}-${min}-${ss}`;
+  }
+
+  // Format date/time for file naming: ddmmyyyy_hhmmss
+  function formatDateTimeForFileName(date) {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+    const ss = String(date.getSeconds()).padStart(2, "0");
+    return `${dd}${mm}${yyyy}_${hh}${min}${ss}`;
+  }
+
+  // Download data as XLSX using SheetJS
+  function downloadAsXLSX(dataArray, headers, fileNamePrefix) {
+    // Create a new workbook and a worksheet
+    const wb = XLSX.utils.book_new();
+    // Convert array of objects to worksheet
+    const ws = XLSX.utils.json_to_sheet(dataArray, { header: headers });
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+    // Construct a filename with date/time
+    const now = new Date();
+    const dateStr = formatDateTimeForFileName(now);
+    const fileName = `${fileNamePrefix}_${dateStr}.xlsx`;
+
+    // Write and download
+    XLSX.writeFile(wb, fileName);
+  }
+
+  // Copy text to clipboard
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => alert("Copied: " + text))
+      .catch(err => console.error("Failed to copy:", err));
+  }
+
+  // --- Rendering Functions ---
+
+  function renderStatesAndTerritories() {
+    const container = document.getElementById("result");
+    container.innerHTML = "";
+
+    // Create table
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const trHead = document.createElement("tr");
+    ["Name", "Abbreviation", "Capital"].forEach(headerText => {
+      const th = document.createElement("th");
+      th.textContent = headerText;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    usStatesAndTerritories.forEach(item => {
+      const tr = document.createElement("tr");
+      // Name
+      let tdName = document.createElement("td");
+      tdName.textContent = item.name;
+      tr.appendChild(tdName);
+      // Abbreviation
+      let tdAbbrev = document.createElement("td");
+      tdAbbrev.textContent = item.abbreviation;
+      tr.appendChild(tdAbbrev);
+      // Capital
+      let tdCapital = document.createElement("td");
+      tdCapital.textContent = item.capital;
+      tr.appendChild(tdCapital);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    container.appendChild(table);
+
+    // Download button
+    const downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "Download as XLSX";
+    downloadBtn.className = "download-btn";
+    downloadBtn.onclick = () => {
+      // We only need Name, Abbrev, Capital in the XLSX
+      const dataForXLSX = usStatesAndTerritories.map(s => ({
+        Name: s.name,
+        Abbreviation: s.abbreviation,
+        Capital: s.capital
+      }));
+      downloadAsXLSX(dataForXLSX, ["Name", "Abbreviation", "Capital"], "US_STATES");
+    };
+
+    container.appendChild(downloadBtn);
+  }
+
+  function renderHolidays() {
+    const container = document.getElementById("result");
+    container.innerHTML = "";
+
+    // Create table
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const trHead = document.createElement("tr");
+    ["Holiday", "Date"].forEach(headerText => {
+      const th = document.createElement("th");
+      th.textContent = headerText;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    usHolidays.forEach(item => {
+      const tr = document.createElement("tr");
+      let tdName = document.createElement("td");
+      tdName.textContent = item.name;
+      tr.appendChild(tdName);
+      let tdDate = document.createElement("td");
+      tdDate.textContent = item.date;
+      tr.appendChild(tdDate);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    container.appendChild(table);
+
+    // Download button
+    const downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "Download as XLSX";
+    downloadBtn.className = "download-btn";
+    downloadBtn.onclick = () => {
+      const dataForXLSX = usHolidays.map(h => ({
+        Holiday: h.name,
+        Date: h.date
+      }));
+      downloadAsXLSX(dataForXLSX, ["Holiday", "Date"], "US_HOLLIDAYS");
+    };
+
+    container.appendChild(downloadBtn);
+  }
+
+  // We'll store a reference to an interval that updates time zones, so we can clear it if user changes selection
+  let tzInterval = null;
+
+  function renderTimeZones() {
+    const container = document.getElementById("result");
+    container.innerHTML = "";
+
+    const timeContainer = document.createElement("div");
+    timeContainer.className = "time-container";
+    container.appendChild(timeContainer);
+
+    // For each time zone, create an element that updates
+    usTimeZones.forEach(zone => {
+      const tzElem = document.createElement("div");
+      tzElem.className = "time-item";
+
+      const label = document.createElement("strong");
+      label.textContent = zone.label + ": ";
+
+      const timeDisplay = document.createElement("span");
+      timeDisplay.style.marginLeft = "8px";
+      timeDisplay.id = "timeDisplay_" + zone.label.replace(/\s/g, "_");
+
+      const copyBtn = document.createElement("button");
+      copyBtn.textContent = "Copy";
+      copyBtn.className = "copy-btn";
+      copyBtn.onclick = () => {
+        // Convert the displayed time to the copy format
+        // We'll just reuse the date object used to show the time
+        const now = new Date(
+          new Date().toLocaleString("en-US", { timeZone: zone.tz })
+        );
+        const copyText = formatDateTimeForCopy(now);
+        copyToClipboard(copyText);
+      };
+
+      tzElem.appendChild(label);
+      tzElem.appendChild(timeDisplay);
+      tzElem.appendChild(copyBtn);
+      timeContainer.appendChild(tzElem);
+    });
+
+    // Update function for each timezone
+    function updateTimeZones() {
+      usTimeZones.forEach(zone => {
+        const now = new Date(
+          new Date().toLocaleString("en-US", { timeZone: zone.tz })
+        );
+        const ms = String(now.getMilliseconds()).padStart(3, "0");
+        // Display something like: 2025-02-14 13:45:30.123 (just as an example)
+        // You can choose your own display format. We show (Day/Month/Year Hour:Minute:Second.Millisecond)
+        const dd = String(now.getDate()).padStart(2, "0");
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const yyyy = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const min = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+
+        const displayStr = `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}.${ms}`;
+        const timeDisplay = document.getElementById("timeDisplay_" + zone.label.replace(/\s/g, "_"));
+        if (timeDisplay) {
+          timeDisplay.textContent = displayStr;
+        }
+      });
+    }
+
+    // Update immediately, then set interval
+    updateTimeZones();
+    tzInterval = setInterval(updateTimeZones, 250); // Update every 250ms
+  }
+
+  function renderASCII() {
+    const container = document.getElementById("result");
+    container.innerHTML = "";
+
+    asciiTable.forEach(entry => {
+      const div = document.createElement("div");
+      div.className = "ascii-item";
+
+      const codeSpan = document.createElement("span");
+      codeSpan.className = "ascii-code";
+      codeSpan.textContent = entry.code;
+
+      const charSpan = document.createElement("span");
+      charSpan.className = "ascii-char";
+      // If it's a non-printable control name, show that. Otherwise show the character
+      charSpan.textContent = entry.char;
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copy-btn";
+      copyBtn.textContent = "Copy";
+      copyBtn.onclick = () => {
+        // For control codes, might copy the actual character code if printable
+        // or just copy the "name" if it's a control.
+        // Usually you'd decide how you want this to behave. Here, if it's
+        // outside printable range, we won't actually copy the control character
+        // (that might be invisible). We'll copy the `entry.char` string instead.
+        copyToClipboard(
+          entry.code >= 32 && entry.code !== 127
+            ? String.fromCharCode(entry.code)
+            : entry.char
+        );
+      };
+
+      div.appendChild(codeSpan);
+      div.appendChild(charSpan);
+      div.appendChild(copyBtn);
+      container.appendChild(div);
+    });
+  }
+
+  // --- Main Handler ---
+
+  document.getElementById("getBtn").addEventListener("click", () => {
+    const selection = document.getElementById("typeSelect").value;
+    const container = document.getElementById("result");
+    container.innerHTML = "";
+
+    // Clear any interval that might be running from Time Zone dashboard
+    if (tzInterval) {
+      clearInterval(tzInterval);
+      tzInterval = null;
+    }
+
+    switch (selection) {
+      case "states":
+        renderStatesAndTerritories();
+        break;
+      case "holidays":
+        renderHolidays();
+        break;
+      case "timezones":
+        renderTimeZones();
+        break;
+      case "ascii":
+        renderASCII();
+        break;
+      default:
+        // "Select Type" or empty
+        container.innerHTML = "<p>Please select an option from the dropdown.</p>";
+    }
+  });
+</script>
+
+</body>
+</html>
